@@ -72,7 +72,7 @@ app.post("/upload", (req, res) => {
     }
 
     // Insert user data into the database
-    const query = "INSERT INTO users (name, banner) VALUES (name, banner)";
+    const query = "INSERT INTO users (name, banner) VALUES (?, ?)";
     db.query(query, [name, filePath], (err, result) => {
       if (err) {
         console.error("Error saving data to DB:", err);
@@ -95,3 +95,17 @@ app.get("/backend_app", (req, res) => {
 app.listen(8001, () => {
   console.log("Hello Tuma, server is listening on port 8001");
 });
+
+app.get("/users", (req, res) => {
+  const userQuery = "SELECT * FROM users";
+
+  db.query(userQuery, (err, data) => {
+    if (err) {
+      return res
+        .status(500)
+        .json({ error: "Database query failed", details: err.message });
+    }
+    return res.json(data);
+  });
+});
+
