@@ -48,7 +48,7 @@ if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir);
 }
 
-// API route to handle file upload
+
 app.post("/upload", (req, res) => {
   const { name, banner } = req.body; // 'banner' is the Base64 string
 
@@ -63,6 +63,7 @@ app.post("/upload", (req, res) => {
   const buffer = Buffer.from(base64Data, "base64");
   const fileName = `${Date.now()}_image.png`; // Save as PNG (adjust if needed)
   const filePath = path.join(uploadDir, fileName);
+  const banner1 = "/uploads/" + fileName;
 
   // Save the file
   fs.writeFile(filePath, buffer, (err) => {
@@ -71,9 +72,8 @@ app.post("/upload", (req, res) => {
       return res.status(500).json({ message: "Error saving file" });
     }
 
-    // Insert user data into the database
     const query = "INSERT INTO users (name, banner) VALUES (?, ?)";
-    db.query(query, [name, filePath], (err, result) => {
+    db.query(query, [name, banner1], (err, result) => {
       if (err) {
         console.error("Error saving data to DB:", err);
         return res
@@ -86,10 +86,6 @@ app.post("/upload", (req, res) => {
   });
 });
 
-// Basic route
-app.get("/backend_app", (req, res) => {
-  return res.json("Hello, it's Tuma from backend");
-});
 
 // Start the server
 app.listen(8001, () => {
@@ -109,3 +105,4 @@ app.get("/users", (req, res) => {
   });
 });
 
+app.use("/uploads", express.static("uploads")); 
