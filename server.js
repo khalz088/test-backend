@@ -48,7 +48,7 @@ if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir);
 }
 
-
+// Upload Endpoint
 app.post("/upload", (req, res) => {
   const { name, banner } = req.body; // 'banner' is the Base64 string
 
@@ -86,12 +86,7 @@ app.post("/upload", (req, res) => {
   });
 });
 
-
-// Start the server
-app.listen(8001, () => {
-  console.log("Hello Tuma, server is listening on port 8001");
-});
-
+// Get Users Endpoint
 app.get("/users", (req, res) => {
   const userQuery = "SELECT * FROM users";
 
@@ -105,4 +100,48 @@ app.get("/users", (req, res) => {
   });
 });
 
-app.use("/uploads", express.static("uploads")); 
+// Serve uploaded files
+app.use("/uploads", express.static("uploads"));
+
+// DELETE User Endpoint
+app.delete("/delete/:id", (req, res) => {
+  const userId = req.params.id;
+
+  // Fetch the image path from the database before deleting the user
+  const selectQuery = "SELECT banner FROM users WHERE id = ?";
+  db.query(selectQuery, [userId], (err, result) => {
+    if (err) {
+      console.error("Error retrieving file path:", err);
+      return res.status(500).json({ message: "Database error" });
+    }
+
+    if (result.length === 0) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const filePath = path.join(__dirname, result[0].banner);
+
+    // Delete the user from the database
+    const deleteQuery = "DELETE FROM users WHERE id = ?";
+    db.query(deleteQuery, [userId], (err, deleteResult) => {
+      if (err) {
+        console.error("Error deleting user:", err);
+        return res.status(500).json({ message: "Database delete error" });
+      }
+
+      // Delete the image file
+      fs.unlink(filePath, (err) => {
+        if (err) {
+          console.error("Error deleting file:", err);
+        }
+      });
+
+      res.json({ message: "User deleted successfully" });
+    });
+  });
+});
+
+// Start the server
+app.listen(8001, () => {
+  console.log("Hello Tuma, server is listening on port 8001");
+});
