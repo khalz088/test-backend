@@ -103,11 +103,9 @@ app.get("/users", (req, res) => {
 // Serve uploaded files
 app.use("/uploads", express.static("uploads"));
 
-// DELETE User Endpoint
+// DELETE User 
 app.delete("/delete/:id", (req, res) => {
   const userId = req.params.id;
-
-  // Fetch the image path from the database before deleting the user
   const selectQuery = "SELECT banner FROM users WHERE id = ?";
   db.query(selectQuery, [userId], (err, result) => {
     if (err) {
@@ -141,7 +139,68 @@ app.delete("/delete/:id", (req, res) => {
   });
 });
 
+
+
+app.post("/update/:id", (req, res) => {
+  const userId = req.params.id;
+  const { name, banner } = req.body;
+
+  if (!name || !banner) {
+    return res.status(400).json({ message: "Name and file are required" });
+  }
+
+  // Retrieve the existing banner path
+  const selectQuery = "SELECT banner FROM users WHERE id = ?";
+  db.query(selectQuery, [userId], (err, result) => {
+    if (err) {
+      console.error("Error retrieving file path:", err);
+      return res.status(500).json({ message: "Database error" });
+    }
+
+    if (result.length === 0) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const oldFilePath = path.join(__dirname, result[0].banner);
+
+    // Process the new banner
+    const base64Data = banner.replace(/^data:image\/\w+;base64,/, "");
+    const buffer = Buffer.from(base64Data, "base64");
+    const fileName = `${Date.now()}_image.png`;
+    const filePath = path.join(uploadDir, fileName);
+    const newBannerPath = "/uploads/" + fileName;
+
+    // Save the new image file
+    fs.writeFile(filePath, buffer, (err) => {
+      if (err) {
+        console.error("Error saving file:", err);
+        return res.status(500).json({ message: "Error saving file" });
+      }
+
+      // Update user in the database
+      const updateQuery = "UPDATE users SET name = ?, banner = ? WHERE id = ?";
+      db.query(updateQuery, [name, newBannerPath, userId], (err, updateResult) => {
+        if (err) {
+          console.error("Error updating user:", err);
+          return res.status(500).json({ message: "Database update error" });
+        }
+
+        // Delete the old image file
+        fs.unlink(oldFilePath, (err) => {
+          if (err) {
+            console.error("Error deleting old file:", err);
+          }
+        });
+
+        res.json({ message: "User updated successfully" });
+      });
+    });
+  });
+});
+
+
 // Start the server
 app.listen(8001, () => {
   console.log("Hello Tuma, server is listening on port 8001");
 });
+
