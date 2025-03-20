@@ -6,9 +6,9 @@ const path = require("path");
 
 const app = express();
 app.use(cors());
-app.use(express.json({ limit: "10mb" })); // Increase body size limit to handle large Base64 images
+app.use(express.json({ limit: "10mb" }));
 
-// Database connection
+
 const db = mysql.createConnection({
   host: "localhost",
   user: "root",
@@ -16,7 +16,7 @@ const db = mysql.createConnection({
   database: "test",
 });
 
-// Connect to MySQL
+
 db.connect((err) => {
   if (err) {
     console.error("Database connection failed:", err);
@@ -24,7 +24,7 @@ db.connect((err) => {
   }
   console.log("Connected to MySQL");
 
-  // Create users table if not exists
+
   const createTableQuery = `
         CREATE TABLE IF NOT EXISTS users (
             id INT AUTO_INCREMENT PRIMARY KEY,
@@ -42,7 +42,7 @@ db.connect((err) => {
   });
 });
 
-// Ensure upload directory exists
+
 const uploadDir = path.join(__dirname, "uploads");
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir);
@@ -50,13 +50,13 @@ if (!fs.existsSync(uploadDir)) {
 
 // Upload Endpoint
 app.post("/upload", (req, res) => {
-  const { name, banner } = req.body; // 'banner' is the Base64 string
+  const {name , banner} = req.body;
 
   if (!name || !banner) {
     return res.status(400).json({ message: "Name and file are required" });
   }
 
-  // Extract the Base64 string without the data URL prefix
+ 
   const base64Data = banner.replace(/^data:image\/\w+;base64,/, "");
 
   // Decode the Base64 string and save the file
@@ -119,7 +119,6 @@ app.delete("/delete/:id", (req, res) => {
 
     const filePath = path.join(__dirname, result[0].banner);
 
-    // Delete the user from the database
     const deleteQuery = "DELETE FROM users WHERE id = ?";
     db.query(deleteQuery, [userId], (err, deleteResult) => {
       if (err) {
